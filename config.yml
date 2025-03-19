@@ -1,0 +1,13 @@
+---
+openrouter:
+  model: anthropic/claude-3.5-sonnet
+  uri: https://openrouter.ai/api/v1/chat/completions
+anthropic:
+  model: claude-3-5-sonnet-20241022
+  uri: https://api.anthropic.com/v1/messages
+openai:
+  uri: https://api.openai.com/v1/chat/completions
+  model: gpt-4o-mini
+dalle:
+  uri: https://api.openai.com/v1/chat/completions
+  model: dall-e-3
