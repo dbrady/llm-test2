@@ -43,13 +43,6 @@ BANNER
     Optimist.die "service must be one of #{config.keys.map(&:to_s).inspect}" unless config.keys.map(&:to_s).include?(opts[:service])
     Optimist.die 'action must be one of #{VALID_ACTIONS.inspect}' if opts[:action_given] && !VALID_ACTIONS.include?(opts[:action])
 
-    if ARGV.first == "models"
-      table = TinyTable.new(head: ["provider", "model", "name"])
-      table.rows = RubyLLM.models.all.map {|m| [m.provider, m.id, m.display_name]}.sort
-      puts table.to_s
-      exit 0
-    end
-
     service = opts[:service]
     model = opts[:model] || config[service]["model"]
 
@@ -57,6 +50,29 @@ BANNER
       llm.anthropic_api_key = keys["anthropic"]["key"]
       llm.openai_api_key = keys["openai"]["key"]
     end
+
+    # quick hack to add "commands" - models, dump
+    case ARGV.first
+    when "models"
+      table = TinyTable.new(head: ["provider", "model", "name"])
+      table.rows = RubyLLM.models.all.map {|m| [m.provider, m.id, m.display_name]}.sort
+      puts table.to_s
+      exit 0
+    when "dump"
+      model = RubyLLM.models.find(model)
+
+      puts "Model: #{model.display_name}"
+      puts "Provider: #{model.provider}"
+      puts "Context window: #{model.context_window} tokens"
+      puts "Max generation: #{model.max_tokens} tokens"
+      puts "Input price: $#{model.input_price_per_million} per million tokens"
+      puts "Output price: $#{model.output_price_per_million} per million tokens"
+      puts "Supports vision: #{model.supports_vision}"
+      puts "Supports functions: #{model.supports_functions}"
+      puts "Supports JSON mode: #{model.supports_json_mode}"
+      exit 0
+    end
+
 
     puts "Using model '#{model}' from service '#{opts[:service]}'"
     case opts[:service]
@@ -77,7 +93,17 @@ BANNER
         end
         puts
       when "analyze"
-        puts "TBA"
+        # this is just chat with { with: filename.ext }.
+        raise "You need to specify an image" unless opts[:file_given]
+        raise "Image not found: #{opts[:file]}" unless File.exist?(opts[:file])
+        prompt = "What's in this image?"
+        @chat = RubyLLM.chat(model: config[service]["model"])
+
+        puts prompt.cyan
+        puts opts[:file].cyan
+        response = chat.ask prompt, with: { image: opts[:file] }
+        puts response.content
+        puts
       else
         @chat = RubyLLM.chat(model: config[service]["model"])
 
@@ -86,8 +112,20 @@ BANNER
     else
       puts "Could not determine which service to use"
     end
-
   end
+
+  def dump_model(model)
+    puts "Model: #{model.display_name}"
+    puts "Provider: #{model.provider}"
+    puts "Context window: #{model.context_window} tokens"
+    puts "Max generation: #{model.max_tokens} tokens"
+    puts "Input price: $#{model.input_price_per_million} per million tokens"
+    puts "Output price: $#{model.output_price_per_million} per million tokens"
+    puts "Supports vision: #{model.supports_vision}"
+    puts "Supports functions: #{model.supports_functions}"
+    puts "Supports JSON mode: #{model.supports_json_mode}"
+  end
+
 
   def ask_chat(prompt)
     puts prompt.cyan
