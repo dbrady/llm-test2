@@ -74,6 +74,13 @@ BANNER
     end
 
 
+    if debug?
+      puts "Model: #{model}"
+      puts "Service: #{opts[:service]}"
+      puts "Action: #{opts[:action]}"
+      puts "Prompt: #{prompt}"
+    end
+
     puts "Using model '#{model}' from service '#{opts[:service]}'"
     case opts[:service]
     when "anthropic"
